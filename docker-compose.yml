@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: srs_sql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd
+    ports:
+      - "14333:1433"
+    volumes:
+      - srs_sql_data:/var/opt/mssql
+
+  api:
+    build: ./backend/SmartRoomScheduler.Api
+    container_name: srs_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=SmartRoomSchedulerDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - Jwt__Key=super_secret_demo_key_change_me_please_12345
+      - Jwt__Issuer=SmartRoomScheduler
+      - Jwt__Audience=SmartRoomSchedulerUsers
+      - FrontendUrl=http://localhost:5173
+    ports:
+      - "5212:8080"
+    depends_on:
+      - db
+
+  web:
+    build: ./frontend
+    container_name: srs_web
+    environment:
+      - VITE_API_BASE=http://localhost:5212
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  srs_sql_data:
